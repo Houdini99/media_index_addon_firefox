@@ -6,6 +6,9 @@ The extension is host-agnostic: configure your server URL once in Settings, and 
 
 > **Companion server:** [github.com/Houdini99/media_index](https://github.com/Houdini99/media_index) — the open-source backend this extension is built for, by the same developer.
 
+> [!NOTE]
+> AI helps me build this stuff. I check over everything and try to fix bugs as fast as possible. Not a master, just building and learning!
+
 ---
 
 ## Features
