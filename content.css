@@ -1,0 +1,318 @@
+/* All rules use !important so the page's own styles cannot override the modal */
+
+#idx-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  box-sizing: border-box !important;
+}
+
+#idx-modal {
+  background: #16192a !important;
+  border: 1px solid #2e2e50 !important;
+  border-radius: 10px !important;
+  padding: 26px 28px 22px !important;
+  width: 440px !important;
+  max-width: 92vw !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6) !important;
+  color: #d8d8e8 !important;
+  box-sizing: border-box !important;
+}
+
+#idx-title {
+  margin: 0 0 10px !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.01em !important;
+}
+
+#idx-url {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 7px 10px !important;
+  margin: 0 0 18px !important;
+  background: #0e1020 !important;
+  border: 1px solid #38385a !important;
+  border-radius: 5px !important;
+  color: #888899 !important;
+  font-size: 11px !important;
+  font-family: "SF Mono", "Fira Code", monospace !important;
+  outline: none !important;
+  transition: border-color 0.15s, color 0.15s !important;
+}
+
+#idx-url:focus {
+  border-color: #6060bb !important;
+  color: #dcdcee !important;
+}
+
+#idx-label {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #b0b0cc !important;
+  margin-bottom: 7px !important;
+}
+
+#idx-hint {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: #55556a !important;
+}
+
+#idx-tags-input {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 9px 12px !important;
+  background: #0e1020 !important;
+  border: 1px solid #38385a !important;
+  border-radius: 5px !important;
+  color: #dcdcee !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  outline: none !important;
+  margin-bottom: 14px !important;
+  transition: border-color 0.15s !important;
+}
+
+#idx-tags-input:focus {
+  border-color: #6060bb !important;
+}
+
+#idx-status {
+  min-height: 18px !important;
+  font-size: 13px !important;
+  margin-bottom: 14px !important;
+  line-height: 1.4 !important;
+}
+
+#idx-status.idx-ok {
+  color: #4cca6e !important;
+}
+
+#idx-status.idx-err {
+  color: #f06060 !important;
+}
+
+#idx-buttons {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+#idx-cancel-btn {
+  padding: 8px 16px !important;
+  background: transparent !important;
+  border: 1px solid #44445a !important;
+  border-radius: 5px !important;
+  color: #8888aa !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: background 0.15s, color 0.15s !important;
+}
+
+#idx-cancel-btn:hover:not(:disabled) {
+  background: #2a2a40 !important;
+  color: #ccccee !important;
+}
+
+#idx-upload-btn {
+  padding: 8px 22px !important;
+  background: #5a50aa !important;
+  border: none !important;
+  border-radius: 5px !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+
+#idx-upload-btn:hover:not(:disabled) {
+  background: #6a60bb !important;
+}
+
+#idx-upload-btn:disabled,
+#idx-cancel-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* -------------------------------------------------------------------------
+ * Status pills — floating per-upload progress indicators
+ * One container in bottom-right, pills stack vertically.
+ * z-index sits just below the modal so a pill never covers the modal itself.
+ * ------------------------------------------------------------------------- */
+
+#idx-pills {
+  position: fixed !important;
+  bottom: 16px !important;
+  right: 16px !important;
+  z-index: 2147483646 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  max-width: calc(100vw - 32px) !important;
+}
+
+.idx-pill {
+  pointer-events: auto !important;
+  width: 320px !important;
+  max-width: 100% !important;
+  background: #16192a !important;
+  border: 1px solid #2e2e50 !important;
+  border-radius: 8px !important;
+  color: #d8d8e8 !important;
+  padding: 10px 12px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5) !important;
+  box-sizing: border-box !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition: opacity 0.3s, transform 0.3s, border-color 0.2s !important;
+}
+
+.idx-pill.idx-pill-fade {
+  opacity: 0 !important;
+  transform: translateY(8px) !important;
+}
+
+.idx-pill-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 6px !important;
+}
+
+.idx-pill-icon {
+  font-size: 14px !important;
+  color: #9b8df0 !important;
+  display: inline-block !important;
+  width: 16px !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+}
+
+.idx-pill-phase {
+  flex: 1 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-pill-time {
+  color: #6c6c8a !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 11px !important;
+  flex-shrink: 0 !important;
+}
+
+.idx-pill-close {
+  margin-left: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  color: #6c6c8a !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  padding: 0 4px !important;
+  line-height: 1 !important;
+  font-family: inherit !important;
+  flex-shrink: 0 !important;
+}
+.idx-pill-close:hover {
+  color: #ccccee !important;
+}
+
+.idx-pill-name {
+  color: #b0b0cc !important;
+  font-size: 11px !important;
+  font-family: "SF Mono", "Fira Code", monospace !important;
+  margin-bottom: 6px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-pill-bar {
+  background: #0e1020 !important;
+  border-radius: 3px !important;
+  height: 4px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.idx-pill-fill {
+  background: #6a60bb !important;
+  height: 100% !important;
+  /* No !important on width — the JS sets width inline (without !important)
+   * to drive the progress bar; an !important rule here would shadow it and
+   * the bar would never move. */
+  width: 0%;
+  transition: width 0.2s !important;
+}
+
+/* Indeterminate phases (preparing, uploading, processing, unknown-size
+ * download) animate a moving highlight so the user can tell the addon
+ * is alive even when there's no byte counter to update. */
+.idx-pill.idx-pill-indet .idx-pill-fill {
+  background: linear-gradient(90deg, transparent 0%, #6a60bb 50%, transparent 100%) !important;
+  background-size: 40% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  width: 100%;
+  animation: idx-pill-shimmer 1.2s linear infinite !important;
+}
+
+@keyframes idx-pill-shimmer {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}
+
+.idx-pill-meta {
+  margin-top: 5px !important;
+  color: #6c6c8a !important;
+  font-size: 11px !important;
+  font-variant-numeric: tabular-nums !important;
+  min-height: 13px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-pill.idx-pill-success .idx-pill-icon { color: #4cca6e !important; }
+.idx-pill.idx-pill-success .idx-pill-fill { background: #4cca6e !important; }
+
+.idx-pill.idx-pill-duplicate .idx-pill-icon { color: #f0c050 !important; }
+.idx-pill.idx-pill-duplicate .idx-pill-fill { background: #f0c050 !important; }
+
+.idx-pill.idx-pill-error { border-color: #802040 !important; }
+.idx-pill.idx-pill-error .idx-pill-icon { color: #f06060 !important; }
+.idx-pill.idx-pill-error .idx-pill-meta { color: #f08080 !important; }
+
+/* Stuck warning — appears when a phase hasn't reported progress for 30s */
+.idx-pill.idx-pill-stuck {
+  border-color: #806020 !important;
+}
+.idx-pill.idx-pill-stuck::after {
+  content: "Still working — no progress for 30s" !important;
+  display: block !important;
+  margin-top: 5px !important;
+  color: #f0c050 !important;
+  font-size: 10px !important;
+}

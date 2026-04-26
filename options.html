@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Download to Index — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Download to Index</h1>
+      <p class="sub">Configure the media index server this extension uploads to.</p>
+    </header>
+
+    <form id="settings-form" autocomplete="off">
+      <section class="field">
+        <label for="base-url">Server URL</label>
+        <input
+          id="base-url"
+          type="url"
+          placeholder="https://media.example.com"
+          spellcheck="false"
+          required
+        />
+        <p class="hint">
+          Root URL of your media index (no trailing slash). The login page is
+          expected at <code>/login</code> and uploads at <code>/upload</code>.
+        </p>
+      </section>
+
+      <section class="field">
+        <label for="native-host">Native messaging host (optional)</label>
+        <input
+          id="native-host"
+          type="text"
+          placeholder="download_to_index.dl_helper"
+          spellcheck="false"
+        />
+        <p class="hint">
+          Name of the installed yt-dlp helper (used to resolve streaming URLs).
+          Leave blank to skip native resolution.
+        </p>
+      </section>
+
+      <section class="actions">
+        <button type="button" id="test-btn">Test connection</button>
+        <button type="submit" id="save-btn">Save</button>
+      </section>
+
+      <p id="status" aria-live="polite"></p>
+    </form>
+
+    <footer>
+      <h2>Privacy</h2>
+      <ul>
+        <li>Files and tags are sent only to the server URL you configure above.</li>
+        <li>The extension reads cookies for that server (to keep your session) and rewrites the <code>Referer</code> / <code>Origin</code> headers on requests it sends there (to satisfy CSRF checks).</li>
+        <li>No analytics, telemetry, or third-party requests.</li>
+        <li>Host access is requested per server when you save settings — the extension is not granted access to all sites at install.</li>
+      </ul>
+    </footer>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

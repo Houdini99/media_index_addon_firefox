@@ -1,0 +1,7 @@
+{
+  "name": "download_to_index.dl_helper",
+  "description": "yt-dlp helper for Download to Index",
+  "path": "REPLACED_AT_INSTALL_TIME",
+  "type": "stdio",
+  "allowed_extensions": ["download-to-index@local"]
+}

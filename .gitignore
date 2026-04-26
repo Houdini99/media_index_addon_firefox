@@ -1,0 +1,34 @@
+# Packaged builds
+*.xpi
+*.zip
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.*.kate-swp
+
+# Python (native helper)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Local-only secrets / overrides
+*.local
+.env
+.env.*
+
+# Firefox web-ext artifacts
+web-ext-artifacts/
+
+# AMO / mozilla submission outputs
+artifacts/
