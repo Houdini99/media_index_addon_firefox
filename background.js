@@ -16,8 +16,14 @@ const DEFAULT_NATIVE_HOST = "download_to_index.dl_helper";
 let BASE_URL = "";
 let NATIVE_HOST = DEFAULT_NATIVE_HOST;
 
-// Holds the pending upload when the user had to log in first
-let pendingUpload = null;
+// Uploads the user kicked off while logged out, waiting on a successful login.
+// A queue (not a single slot) so right-clicking several items in quick succession
+// doesn't silently lose all but the last.  Cleared in bulk on the first
+// post-login navigation that lands on a recognised same-origin page.
+const pendingUploads = [];
+// id of the login tab we opened (if any) so we can close it once and don't
+// keep opening new ones for each queued intent.
+let loginTabId = null;
 
 // Concurrent-upload cap.  Right-clicking many large files in quick succession
 // would otherwise saturate the link and stress the server; queue the rest.
@@ -204,13 +210,30 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 
   if (!(await hasSession())) {
-    // Store intent and send the user to the login page
-    pendingUpload = { srcUrl, tabId: tab.id };
-    browser.tabs.create({ url: `${BASE_URL}/login` });
+    // Capture pageUrl now (not at upload time) so SPA navigation between the
+    // right-click and the user finishing the modal doesn't store the wrong
+    // source page on the upload record.
+    pendingUploads.push({ srcUrl, tabId: tab.id, pageUrl: tab.url || null });
+    // Reuse an already-open login tab if we have one, so a burst of right-clicks
+    // doesn't spawn a tab per intent.
+    if (loginTabId != null) {
+      try { await browser.tabs.update(loginTabId, { active: true }); return; } catch {}
+      loginTabId = null;
+    }
+    try {
+      const loginTab = await browser.tabs.create({ url: `${BASE_URL}/login` });
+      loginTabId = loginTab && loginTab.id != null ? loginTab.id : null;
+    } catch {}
     return;
   }
 
-  triggerModal(tab.id, srcUrl);
+  triggerModal(tab.id, srcUrl, tab.url || null);
+});
+
+// Forget the login tab once the user closes it manually so the next
+// logged-out right-click opens a fresh one instead of failing silently.
+browser.tabs.onRemoved.addListener((tabId) => {
+  if (loginTabId === tabId) loginTabId = null;
 });
 
 // Ask a single frame's content script to resolve the media URL near the
@@ -234,7 +257,7 @@ async function probeFrame(tabId, frameId, targetElementId) {
 // ---------------------------------------------------------------------------
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (!pendingUpload || changeInfo.status !== "complete" || !tab.url) return;
+  if (!pendingUploads.length || changeInfo.status !== "complete" || !tab.url) return;
   if (!BASE_URL) return;
 
   // User landed on the main gallery or upload page after logging in
@@ -244,10 +267,14 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
   if (!(await hasSession())) return;
 
-  const { srcUrl, tabId: origTabId } = pendingUpload;
-  pendingUpload = null;
+  // Drain the whole queue — every intent the user lined up while logged out
+  // gets its modal in its original tab.
+  const drained = pendingUploads.splice(0, pendingUploads.length);
+  if (loginTabId === tabId) loginTabId = null;
   browser.tabs.remove(tabId).catch(() => {});
-  triggerModal(origTabId, srcUrl);
+  for (const job of drained) {
+    triggerModal(job.tabId, job.srcUrl, job.pageUrl);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -257,7 +284,10 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 browser.runtime.onMessage.addListener((msg, sender) => {
   if (msg.action === "upload") {
     const tabId   = sender.tab ? sender.tab.id  : null;
-    const pageUrl = sender.tab ? sender.tab.url : null;
+    // Prefer the pageUrl the modal captured at right-click time (carried by
+    // the content script in msg.pageUrl) so SPA navigation between the
+    // right-click and Upload doesn't record the post-navigation page.
+    const pageUrl = msg.pageUrl || (sender.tab ? sender.tab.url : null);
     const uploadId = msg.uploadId || newUploadId();
     enqueueUpload({ srcUrl: msg.srcUrl, tags: msg.tags, tabId, uploadId, pageUrl });
   }
@@ -310,11 +340,13 @@ async function getCookieHeader() {
   }
 }
 
-async function triggerModal(tabId, srcUrl) {
+async function triggerModal(tabId, srcUrl, pageUrl) {
   try {
     // Always render the modal in the top frame so it overlays the whole tab,
     // not a potentially tiny cross-origin iframe that triggered the click.
-    await browser.tabs.sendMessage(tabId, { action: "showModal", srcUrl }, { frameId: 0 });
+    // pageUrl is captured at right-click time and threaded back via the
+    // upload message, so SPA navigation doesn't change the recorded source.
+    await browser.tabs.sendMessage(tabId, { action: "showModal", srcUrl, pageUrl }, { frameId: 0 });
   } catch {
     notify("Error", "Could not show the tag input. Refresh the page and try again.");
   }
@@ -346,10 +378,17 @@ async function fetchCsrfToken(cookieHeader) {
 // decoding bytes from IndexedDB or an in-memory cache.  A fetch from the
 // background script bypasses the SW entirely and gets a placeholder/404, so
 // for those origins we have to delegate the download to the content script.
+//
+// blob: URLs are also always routed in-page: they're scoped to the document
+// that created them, so a background-script fetch can't see them at all
+// (it rejects with bare "NetworkError when attempting to fetch resource").
+// new URL("blob:https://host/...").hostname is "" — only `origin` carries the
+// inner host — so we have to special-case the protocol before host-matching.
 function requiresInPageFetch(url) {
   try {
-    const host = new URL(url).hostname;
-    return host === "web.telegram.org" || host === "web.whatsapp.com";
+    const u = new URL(url);
+    if (u.protocol === "blob:") return true;
+    return u.hostname === "web.telegram.org" || u.hostname === "web.whatsapp.com";
   } catch {
     return false;
   }

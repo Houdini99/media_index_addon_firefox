@@ -28,20 +28,15 @@ def send_message(msg):
     sys.stdout.buffer.flush()
 
 
-def main():
-    if not shutil.which("yt-dlp"):
-        send_message({"kind": "error", "message": "yt-dlp not installed"})
-        return
+def run_yt_dlp(target):
+    """Run yt-dlp --get-url against `target`.
 
-    msg = read_message()
-    if not msg:
-        return
-
-    target = msg.get("pageUrl") or msg.get("srcUrl")
-    if not target:
-        send_message({"kind": "passthrough", "reason": "no URL provided"})
-        return
-
+    Returns (kind, payload) where:
+      ("direct", url)              — yt-dlp resolved a single playable URL
+      ("multi",  count)            — yt-dlp returned multiple streams (no mux)
+      ("none",   reason)           — yt-dlp didn't recognise this URL
+      ("error",  message)          — yt-dlp couldn't be invoked at all
+    """
     try:
         out = subprocess.run(
             # Format selectors, in priority order:
@@ -57,33 +52,61 @@ def main():
             capture_output=True, text=True, timeout=30, check=False,
         )
     except subprocess.TimeoutExpired:
-        send_message({"kind": "passthrough", "reason": "yt-dlp timed out"})
-        return
+        return ("none", "yt-dlp timed out")
     except Exception as e:
-        send_message({"kind": "error", "message": str(e)[:200]})
-        return
+        return ("error", str(e)[:200])
 
     if out.returncode != 0 or not out.stdout.strip():
-        send_message({
-            "kind": "passthrough",
-            "reason": (out.stderr.strip() or "no extractor match")[:200],
-        })
-        return
+        return ("none", (out.stderr.strip() or "no extractor match")[:200])
 
     lines = out.stdout.strip().splitlines()
     if len(lines) > 1:
-        # Two or more URLs means yt-dlp couldn't find a single-file format
-        # (e.g. YouTube's separate video+audio streams).  We can't mux them
-        # in the extension, so let the upload flow fall back to its normal
-        # path — which for HLS/DASH manifests will probably still fail, but
-        # at least won't silently produce a video without sound.
-        send_message({
-            "kind": "passthrough",
-            "reason": f"yt-dlp returned {len(lines)} streams; muxing not supported",
-        })
+        return ("multi", len(lines))
+    return ("direct", lines[0])
+
+
+def main():
+    if not shutil.which("yt-dlp"):
+        send_message({"kind": "error", "message": "yt-dlp not installed"})
         return
 
-    send_message({"kind": "direct", "url": lines[0]})
+    msg = read_message()
+    if not msg:
+        return
+
+    src_url = msg.get("srcUrl") or ""
+    page_url = msg.get("pageUrl") or ""
+
+    # Try srcUrl first — for embedded media on a generic content page (e.g. a
+    # CDN HLS manifest dropped onto an article), srcUrl is the actual stream
+    # and pageUrl is just the surrounding context.  Falling back to pageUrl
+    # covers the opposite shape (e.g. a YouTube watch page where srcUrl is
+    # something blob/MSE-derived that yt-dlp can't recognise).
+    targets = [t for t in (src_url, page_url) if t]
+    if not targets:
+        send_message({"kind": "passthrough", "reason": "no URL provided"})
+        return
+
+    last_reason = "no URL provided"
+    for target in targets:
+        kind, payload = run_yt_dlp(target)
+        if kind == "direct":
+            send_message({"kind": "direct", "url": payload})
+            return
+        if kind == "error":
+            send_message({"kind": "error", "message": payload})
+            return
+        if kind == "multi":
+            # Two or more URLs means yt-dlp couldn't find a single-file format
+            # (e.g. YouTube's separate video+audio streams).  We can't mux them
+            # in the extension, so let the upload flow fall back to its normal
+            # path — which for HLS/DASH manifests will probably still fail, but
+            # at least won't silently produce a video without sound.
+            last_reason = f"yt-dlp returned {payload} streams; muxing not supported"
+            continue
+        last_reason = payload
+
+    send_message({"kind": "passthrough", "reason": last_reason})
 
 
 if __name__ == "__main__":

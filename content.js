@@ -36,7 +36,7 @@ if (!window.__indexAddonLoaded) {
 
   browser.runtime.onMessage.addListener((msg) => {
     if (msg.action === "showModal") {
-      showModal(msg.srcUrl);
+      showModal(msg.srcUrl, msg.pageUrl);
       return;
     }
     if (msg.action === "uploadStatus") {
@@ -88,6 +88,13 @@ if (!window.__indexAddonLoaded) {
     return pageHelperReady;
   }
 
+  // Dead-man timer for in-page fetches.  If the page helper crashes, gets
+  // unloaded, or simply drops the response message, the upload-queue slot
+  // (MAX_CONCURRENT in background.js) would otherwise be held forever.  We
+  // reset the timer on every progress tick — so a slow but progressing
+  // download won't trip it — and reject after this much wall-clock idle.
+  const FETCH_IDLE_TIMEOUT_MS = 90_000;
+
   async function fetchInPage(srcUrl, uploadId) {
     try {
       await injectPageHelper();
@@ -97,6 +104,28 @@ if (!window.__indexAddonLoaded) {
 
     return new Promise((resolve) => {
       const id = "idx-" + Math.random().toString(36).slice(2);
+      let idleTimer = null;
+      let settled = false;
+
+      const cleanup = () => {
+        window.removeEventListener("message", onMessage);
+        if (idleTimer != null) { clearTimeout(idleTimer); idleTimer = null; }
+      };
+      const settle = (payload) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(payload);
+      };
+      const armIdleTimer = () => {
+        if (idleTimer != null) clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          settle({
+            ok: false,
+            error: `In-page fetch timed out (no progress for ${FETCH_IDLE_TIMEOUT_MS / 1000}s)`,
+          });
+        }, FETCH_IDLE_TIMEOUT_MS);
+      };
 
       const onMessage = (e) => {
         if (e.source !== window) return;
@@ -104,25 +133,26 @@ if (!window.__indexAddonLoaded) {
         if (!msg || msg.id !== id) return;
 
         if (msg.__idx === "fetch-progress") {
+          armIdleTimer();
           updatePill(uploadId, { phase: "downloading", loaded: msg.loaded, total: msg.total });
           return;
         }
         if (msg.__idx === "fetch-response") {
-          window.removeEventListener("message", onMessage);
           if (msg.ok) {
-            resolve({
+            settle({
               ok: true,
               bytes: msg.bytes,
               contentType: msg.contentType,
               fetchedUrl: msg.fetchedUrl,
             });
           } else {
-            resolve({ ok: false, error: msg.error || "Unknown page-helper error" });
+            settle({ ok: false, error: msg.error || "Unknown page-helper error" });
           }
         }
       };
 
       window.addEventListener("message", onMessage);
+      armIdleTimer();
       // Pass the captured right-click coordinates so the helper can find the
       // exact element the user targeted (needed to disambiguate the doc ID
       // when Telegram serves nojs.mp4 for MSE videos and several real doc IDs
@@ -241,7 +271,11 @@ if (!window.__indexAddonLoaded) {
       const m = bg.match(/url\((['"]?)(.*?)\1\)/);
       if (!m) return null;
       const raw = m[2];
-      if (!raw || raw.startsWith("data:")) return null;
+      if (!raw) return null;
+      // data: and blob: URLs are absolute on their own — don't try to resolve
+      // them against the page URL, just pass them through.  blob: routes
+      // through the in-page fetch path, data: is fetchable directly.
+      if (raw.startsWith("data:") || raw.startsWith("blob:")) return raw;
       try {
         return new URL(raw, location.href).href;
       } catch {
@@ -256,7 +290,7 @@ if (!window.__indexAddonLoaded) {
   // Modal
   // -------------------------------------------------------------------------
 
-  function showModal(srcUrl) {
+  function showModal(srcUrl, pageUrl) {
     // Remove any stale overlay from a previous invocation
     removeModal();
 
@@ -315,7 +349,10 @@ if (!window.__indexAddonLoaded) {
       // Spawn the pill synchronously so the user sees feedback before the
       // first status message round-trips through the background script.
       createPill(uploadId, url);
-      browser.runtime.sendMessage({ action: "upload", srcUrl: url, tags, uploadId });
+      // pageUrl is the URL of the tab at right-click time — we forward it
+      // explicitly so an SPA navigation between right-click and Upload
+      // doesn't change the source page recorded against the upload.
+      browser.runtime.sendMessage({ action: "upload", srcUrl: url, tags, uploadId, pageUrl: pageUrl || location.href });
       removeModal();
     };
 

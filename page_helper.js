@@ -15,7 +15,16 @@
 (() => {
   if (window.__idxPageHelperLoaded) return;
   window.__idxPageHelperLoaded = true;
-  console.log("[idx] page_helper loaded");
+
+  // Verbose debugging is gated behind a localStorage flag so production users
+  // don't see the noisy retarget/fiber-walk traces in their devtools.  Flip it
+  // on with `localStorage.setItem("idx-debug", "1")` and reload.
+  const DEBUG = (() => {
+    try { return localStorage.getItem("idx-debug") === "1"; } catch { return false; }
+  })();
+  const dlog = DEBUG ? console.log.bind(console, "[idx]") : () => {};
+  const dwarn = DEBUG ? console.warn.bind(console, "[idx]") : () => {};
+  dlog("page_helper loaded");
 
   // Telegram Web's "no JavaScript" fallback file.  When a video is played via
   // MediaSource (instead of progressive download), the <video> element's src
@@ -23,7 +32,6 @@
   // IndexedDB.  Fetching this URL just gives us the placeholder, which is
   // useless to upload.
   const TELEGRAM_PLACEHOLDER_RE = /\/(?:nojs|noscript)\.mp4(?:[?#]|$)/;
-  const DOC_ID_RE = /\b(\d{15,20})\b/;
 
   // React stores its component-tree metadata as a `__reactFiber$<random>`
   // expando on every rendered DOM node.  We can walk that fiber chain upward
@@ -71,7 +79,7 @@
           if (candidate && candidate.id != null) {
             const idStr = String(candidate.id);
             if (/^\d{15,20}$/.test(idStr)) {
-              console.log("[idx] fiber doc ID found via prop", key, "on", typeName, "at depth", depth, "→", idStr);
+              dlog("fiber doc ID found via prop", key, "on", typeName, "at depth", depth, "→", idStr);
               return idStr;
             }
           }
@@ -80,23 +88,7 @@
       fiber = fiber.return;
       depth++;
     }
-    console.log("[idx] fiber walk for", label, "found no doc ID. Components visited:", dumps);
-    return null;
-  }
-
-  // Scan only the direct ancestor chain (NOT siblings/subtrees) of `el` for
-  // a doc ID attribute.  This is the safe attribute-based fallback when
-  // fiber inspection fails — picking the closest ancestor avoids grabbing
-  // unrelated stickers/icons that share the message wrapper.
-  function findDocIdInAncestors(el) {
-    let cur = el;
-    while (cur && cur !== document.documentElement) {
-      for (const a of cur.attributes || []) {
-        const m = a.value.match(DOC_ID_RE);
-        if (m) return m[1];
-      }
-      cur = cur.parentElement;
-    }
+    dlog("fiber walk for", label, "found no doc ID. Components visited:", dumps);
     return null;
   }
 
@@ -126,7 +118,7 @@
   // the page-world fetch can resolve, or null if we can't find anything.
   function findRealUrlAtPoint(x, y) {
     const stack = document.elementsFromPoint(x, y) || [];
-    console.log("[idx] elementsFromPoint:", stack.slice(0, 5).map(el => el.tagName + (el.id ? "#" + el.id : "")));
+    dlog("elementsFromPoint:", stack.slice(0, 5).map(el => el.tagName + (el.id ? "#" + el.id : "")));
 
     // 1. Media-viewer fast path: if the full-screen video viewer is open, the
     // right-click was almost certainly on it.
@@ -135,20 +127,20 @@
       const id = extractDocIdFromVideo(mvVideo);
       if (id) {
         const url = telegramProgressiveUrl(id);
-        console.log("[idx] using #media-viewer-video URL:", url);
+        dlog("using #media-viewer-video URL:", url);
         return url;
       }
     }
 
     if (!stack.length) {
-      console.warn("[idx] elementsFromPoint returned empty for", x, y);
+      dwarn("elementsFromPoint returned empty for", x, y);
       return null;
     }
 
     // 2. Image at click — img.src is a blob: URL holding the real bytes.
     const img = stack.find(el => el.tagName === "IMG");
     if (img && img.src && !TELEGRAM_PLACEHOLDER_RE.test(img.src)) {
-      console.log("[idx] using <img> src:", img.src);
+      dlog("using <img> src:", img.src);
       return img.src;
     }
 
@@ -158,23 +150,22 @@
       const id = extractDocIdFromVideo(clickVideo);
       if (id) {
         const url = telegramProgressiveUrl(id);
-        console.log("[idx] using clicked <video> URL:", url);
+        dlog("using clicked <video> URL:", url);
         return url;
       }
     }
 
     const target = stack[0];
-    console.log("[idx] target element at click:",
+    dlog("target element at click:",
       target.tagName, target.className || "", target.id || "(no id)");
 
     // 4. Fiber walk (Teact won't have __reactFiber$ expandos, but harmless to try).
     const fromFiber = findDocIdViaFiber(target, target.tagName);
     if (fromFiber) return telegramProgressiveUrl(fromFiber);
 
-    // 5. Last resort: ancestor attribute scan.
-    const fromAttr = findDocIdInAncestors(target);
-    if (fromAttr) return telegramProgressiveUrl(fromAttr);
-
+    // No attribute-scan fallback: matching any 15-20 digit number in any
+    // attribute on any ancestor false-positives on unrelated peer/message/
+    // sticker IDs and silently downloads the wrong media.
     return null;
   }
 
@@ -187,10 +178,10 @@
     const msg = e.data;
     if (!msg || msg.__idx !== "fetch-request") return;
     let { id, url, coords } = msg;
-    console.log("[idx] fetch-request", id, url, coords);
+    dlog("fetch-request", id, url, coords);
 
     const reply = (payload) => {
-      console.log("[idx] fetch-response", id, payload.ok ? `ok (${payload.bytes && payload.bytes.byteLength} bytes, ${payload.contentType})` : `error: ${payload.error}`);
+      dlog("fetch-response", id, payload.ok ? `ok (${payload.bytes && payload.bytes.byteLength} bytes, ${payload.contentType})` : `error: ${payload.error}`);
       window.postMessage({ __idx: "fetch-response", id, ...payload }, "*");
     };
     const progress = (loaded, total) => window.postMessage({ __idx: "fetch-progress", id, loaded, total }, "*");
@@ -202,10 +193,10 @@
     if (TELEGRAM_PLACEHOLDER_RE.test(url)) {
       const realUrl = coords ? findRealUrlAtPoint(coords.x, coords.y) : null;
       if (realUrl) {
-        console.log("[idx] Telegram retarget:", url, "→", realUrl);
+        dlog("Telegram retarget:", url, "→", realUrl);
         url = realUrl;
       } else {
-        console.warn("[idx] Telegram retarget — no real URL found at click coordinates", coords);
+        dwarn("Telegram retarget — no real URL found at click coordinates", coords);
         reply({
           ok: false,
           error: "Telegram — could not find the real media at the click. Try right-clicking directly on the image or video.",
@@ -228,6 +219,27 @@
 
     progress(0, null);
 
+    // Firefox's blob: URL store doesn't implement byte-range responses and
+    // rejects fetches that carry a Range header or credentials with a bare
+    // NetworkError, so for blob: (and data:) URLs we do one plain whole-body
+    // fetch instead of the chunked Range loop above.
+    if (/^(blob|data):/i.test(url)) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          reply({ ok: false, error: `HTTP ${resp.status} fetching ${url.slice(0, 64)}` });
+          return;
+        }
+        contentType = (resp.headers.get("content-type") || "").split(";")[0].trim();
+        const buf = await resp.arrayBuffer();
+        progress(buf.byteLength, buf.byteLength);
+        reply({ ok: true, bytes: buf, contentType, fetchedUrl: url });
+      } catch (err) {
+        reply({ ok: false, error: (err && err.message) || String(err) });
+      }
+      return;
+    }
+
     try {
       while (true) {
         const rangeStart = offset;
@@ -240,6 +252,24 @@
           headers: { Range: `bytes=${rangeStart}-${rangeEnd}` },
           credentials: "include",
         });
+        // 416 Range Not Satisfiable on the *first* chunk means the server
+        // doesn't accept ranges at all (some hosts reject any Range header
+        // up-front instead of ignoring it).  Retry once without Range and
+        // take the whole body.  416 partway through a real ranged transfer
+        // is a genuine error and surfaces normally.
+        if (resp.status === 416 && offset === 0) {
+          dlog("server rejected Range with 416 — retrying without Range");
+          const plain = await fetch(url, { credentials: "include" });
+          if (!plain.ok) {
+            reply({ ok: false, error: `HTTP ${plain.status} (no-range retry)` });
+            return;
+          }
+          contentType = (plain.headers.get("content-type") || "").split(";")[0].trim();
+          const buf = await plain.arrayBuffer();
+          progress(buf.byteLength, buf.byteLength);
+          reply({ ok: true, bytes: buf, contentType, fetchedUrl: url });
+          return;
+        }
         if (!resp.ok && resp.status !== 206) {
           reply({ ok: false, error: `HTTP ${resp.status} at offset ${offset}` });
           return;
