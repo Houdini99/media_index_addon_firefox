@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Download to Index (Android)",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Tap the toolbar button to pick any image, video, or audio on a webpage and upload it to your self-hosted media index server.",
   "author": "Houdini99",
   "browser_specific_settings": {

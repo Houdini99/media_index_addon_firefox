@@ -397,7 +397,10 @@ function requiresInPageFetch(url) {
 // URLs ending in one of these extensions are already direct media files —
 // no point paying the yt-dlp roundtrip (which can take seconds to tens of
 // seconds per call) just to confirm "yes, that IS the video URL".
-const DIRECT_MEDIA_EXT_RE = /\.(?:jpe?g|png|gif|webp|heic|heif|avif|svg|bmp|ico|mp4|m4v|webm|mov|mkv|avi|flv|3gp|mp3|m4a|ogg|oga|wav|flac|aac|opus)(?:[?#]|$)/i;
+// Allow an optional trailing slash before the query/fragment terminator —
+// some sites (e.g. rule34video) append "/" to their tokenised .mp4 paths,
+// which would otherwise force a needless yt-dlp roundtrip.
+const DIRECT_MEDIA_EXT_RE = /\.(?:jpe?g|png|gif|webp|heic|heif|avif|svg|bmp|ico|mp4|m4v|webm|mov|mkv|avi|flv|3gp|mp3|m4a|ogg|oga|wav|flac|aac|opus)\/?(?:[?#]|$)/i;
 
 function isDirectMediaUrl(url) {
   try {
@@ -432,6 +435,26 @@ async function resolveSrcUrl(srcUrl, pageUrl) {
 // Anti-download placeholder filenames we should never use as the upload
 // filename, regardless of what URL pathway exposed them.
 const PLACEHOLDER_NAMES = /^(?:nojs|noscript)\.mp4$/i;
+
+// Server-side script extensions are never the actual media filename — they're
+// CGI endpoints that stream bytes (e.g. yt-dlp resolves rule34video to a CDN
+// path ending in remote_control.php). Skip them as filename candidates.
+const SCRIPT_EXT_RE = /\.(?:php\d?|aspx?|jsp|cgi|do|ashx)$/i;
+
+// Some sites encode the human-readable filename as a query parameter so they
+// can serve the bytes from an obfuscated/scripted endpoint.  Honour it.
+const FILENAME_QUERY_KEYS = ["download_filename", "filename", "dl_filename", "fname"];
+function filenameFromQuery(u) {
+  if (!u) return "";
+  try {
+    const params = new URL(u).searchParams;
+    for (const key of FILENAME_QUERY_KEYS) {
+      const v = params.get(key);
+      if (v) return v;
+    }
+  } catch {}
+  return "";
+}
 
 // Map common MIME types to the extensions the backend accepts
 const CT_TO_EXT = {
@@ -612,29 +635,40 @@ async function runUpload(job) {
     }
 
     // Derive a filename with the correct extension.  Try in order:
-    //   1. fetchedUrl   — what the page helper actually downloaded
-    //   2. resolvedUrl  — possibly rewritten by yt-dlp / native host
-    //   3. srcUrl       — what the user originally right-clicked
-    //   4. content-type — last resort
-    // Skip anti-download placeholder filenames (nojs.mp4) so we don't tag a
-    // JPEG with .mp4 just because that was the URL we sent the helper.
+    //   1. download_filename= (or similar) on the user's clicked URL — sites
+    //      that serve via an opaque CGI endpoint encode the real name there
+    //   2. fetchedUrl   — what the page helper actually downloaded
+    //   3. resolvedUrl  — possibly rewritten by yt-dlp / native host
+    //   4. srcUrl       — what the user originally right-clicked
+    //   5. content-type — last resort
+    // Skip anti-download placeholder filenames (nojs.mp4) and server-script
+    // names (foo.php) — both are opaque and would tag a real video with the
+    // wrong extension.
+    // Also strip a single trailing slash before extracting the basename so
+    // URLs like /foo/bar.mp4/?args still surface bar.mp4 (rule34video does
+    // this).
     // decodeURIComponent so spaces and unicode in filenames survive intact.
     const safePathname = (u) => {
       try {
-        const raw = new URL(u).pathname.split("/").pop() || "";
+        let path = new URL(u).pathname;
+        if (path.endsWith("/")) path = path.slice(0, -1);
+        const raw = path.split("/").pop() || "";
         return decodeURIComponent(raw);
       } catch {
         return "";
       }
     };
     const candidatePaths = [
+      filenameFromQuery(srcUrl),
+      filenameFromQuery(resolvedUrl),
+      fetchedUrl ? filenameFromQuery(fetchedUrl) : "",
       fetchedUrl ? safePathname(fetchedUrl) : "",
       safePathname(resolvedUrl),
       safePathname(srcUrl),
     ];
     filename = "";
     for (const p of candidatePaths) {
-      if (p && p.includes(".") && !PLACEHOLDER_NAMES.test(p)) {
+      if (p && p.includes(".") && !PLACEHOLDER_NAMES.test(p) && !SCRIPT_EXT_RE.test(p)) {
         filename = p;
         break;
       }

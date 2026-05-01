@@ -4,6 +4,8 @@ Firefox extension that adds a **Download to Index** entry to the right-click men
 
 The extension is host-agnostic: configure your server URL once in Settings, and right-click upload works on every site you visit.
 
+> **OFFICIAL RELEASE VERSION:** [https://addons.mozilla.org/en-US/firefox/addon/download-to-index/](https://addons.mozilla.org/en-US/firefox/addon/download-to-index/) — DOWNLOAD HERE.
+
 > **Companion server:** [github.com/Houdini99/media_index](https://github.com/Houdini99/media_index) — the open-source backend this extension is built for, by the same developer.
 
 > [!NOTE]
