@@ -1,0 +1,566 @@
+/* All rules use !important so the page's own styles cannot override the modal */
+
+/* -------------------------------------------------------------------------
+ * Picker — full-screen sheet of every media item on the page.
+ * Sized for a phone in portrait; adapts to landscape via flex.
+ * ------------------------------------------------------------------------- */
+
+#idx-picker-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.78) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  overscroll-behavior: contain !important;
+}
+
+#idx-picker-sheet {
+  background: #16192a !important;
+  border-top: 1px solid #2e2e50 !important;
+  color: #d8d8e8 !important;
+  width: 100% !important;
+  max-width: 720px !important;
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
+  border-radius: 16px 16px 0 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 92vh !important;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6) !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-height: 720px) {
+  #idx-picker-sheet {
+    margin-top: 6vh !important;
+    margin-bottom: auto !important;
+    border-radius: 16px !important;
+    max-height: 88vh !important;
+  }
+}
+
+#idx-picker-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 18px 8px !important;
+  border-bottom: 1px solid #2a2a44 !important;
+}
+
+#idx-picker-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+}
+
+#idx-picker-close {
+  background: transparent !important;
+  border: none !important;
+  color: #8888aa !important;
+  font-size: 28px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  padding: 4px 10px !important;
+  font-family: inherit !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+#idx-picker-close:hover {
+  color: #ccccee !important;
+}
+
+#idx-picker-sub {
+  padding: 8px 18px 6px !important;
+  font-size: 12px !important;
+  color: #8888aa !important;
+}
+
+#idx-picker-list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 6px 10px 10px !important;
+}
+
+#idx-picker-empty {
+  text-align: center !important;
+  color: #6c6c8a !important;
+  padding: 30px 18px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.idx-picker-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 10px !important;
+  margin: 4px 0 !important;
+  background: #0e1020 !important;
+  border: 1px solid #2a2a44 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  text-align: left !important;
+  color: inherit !important;
+  transition: background 0.15s, border-color 0.15s !important;
+  min-height: 64px !important;
+  box-sizing: border-box !important;
+}
+.idx-picker-row:hover,
+.idx-picker-row:active {
+  background: #1a1d34 !important;
+  border-color: #44446a !important;
+}
+
+.idx-picker-thumb {
+  flex-shrink: 0 !important;
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  background: #06070f !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.idx-picker-thumb img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.idx-picker-thumb-ph {
+  font-size: 22px !important;
+  color: #6c6c8a !important;
+}
+
+.idx-picker-badge {
+  position: absolute !important;
+  bottom: 2px !important;
+  right: 2px !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+  font-size: 9px !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  line-height: 1 !important;
+}
+
+.idx-picker-meta {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.idx-picker-label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-picker-url {
+  font-size: 11px !important;
+  color: #6c6c8a !important;
+  font-family: "SF Mono", "Fira Code", monospace !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#idx-picker-manual {
+  border-top: 1px solid #2a2a44 !important;
+  padding: 12px 14px !important;
+  background: #14172a !important;
+  border-radius: 0 0 16px 16px !important;
+}
+
+#idx-picker-manual label {
+  display: block !important;
+  font-size: 12px !important;
+  color: #8888aa !important;
+  margin-bottom: 6px !important;
+  font-weight: 500 !important;
+}
+
+#idx-picker-manual-row {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+#idx-picker-manual-input {
+  flex: 1 !important;
+  padding: 10px 12px !important;
+  background: #0e1020 !important;
+  border: 1px solid #38385a !important;
+  border-radius: 6px !important;
+  color: #dcdcee !important;
+  font-size: 14px !important;
+  font-family: "SF Mono", "Fira Code", monospace !important;
+  outline: none !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
+}
+#idx-picker-manual-input:focus {
+  border-color: #6060bb !important;
+}
+
+#idx-picker-manual-go {
+  padding: 10px 18px !important;
+  background: #5a50aa !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  min-height: 44px !important;
+  min-width: 64px !important;
+}
+#idx-picker-manual-go:hover {
+  background: #6a60bb !important;
+}
+
+/* -------------------------------------------------------------------------
+ * Modal — confirm URL + tag input, retitled for touch.
+ * ------------------------------------------------------------------------- */
+
+#idx-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  box-sizing: border-box !important;
+  padding: 12px !important;
+}
+
+#idx-modal {
+  background: #16192a !important;
+  border: 1px solid #2e2e50 !important;
+  border-radius: 12px !important;
+  padding: 22px 22px 18px !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6) !important;
+  color: #d8d8e8 !important;
+  box-sizing: border-box !important;
+}
+
+#idx-title {
+  margin: 0 0 12px !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.01em !important;
+}
+
+#idx-url {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 12px !important;
+  margin: 0 0 18px !important;
+  background: #0e1020 !important;
+  border: 1px solid #38385a !important;
+  border-radius: 6px !important;
+  color: #888899 !important;
+  font-size: 12px !important;
+  font-family: "SF Mono", "Fira Code", monospace !important;
+  outline: none !important;
+  transition: border-color 0.15s, color 0.15s !important;
+  min-height: 44px !important;
+}
+
+#idx-url:focus {
+  border-color: #6060bb !important;
+  color: #dcdcee !important;
+}
+
+#idx-label {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #b0b0cc !important;
+  margin-bottom: 7px !important;
+}
+
+#idx-hint {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: #55556a !important;
+}
+
+#idx-tags-input {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 11px 12px !important;
+  background: #0e1020 !important;
+  border: 1px solid #38385a !important;
+  border-radius: 6px !important;
+  color: #dcdcee !important;
+  font-size: 15px !important;
+  font-family: inherit !important;
+  outline: none !important;
+  margin-bottom: 14px !important;
+  transition: border-color 0.15s !important;
+  min-height: 44px !important;
+}
+
+#idx-tags-input:focus {
+  border-color: #6060bb !important;
+}
+
+#idx-status {
+  min-height: 18px !important;
+  font-size: 13px !important;
+  margin-bottom: 14px !important;
+  line-height: 1.4 !important;
+}
+
+#idx-status.idx-ok { color: #4cca6e !important; }
+#idx-status.idx-err { color: #f06060 !important; }
+
+#idx-buttons {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+#idx-cancel-btn {
+  padding: 11px 18px !important;
+  background: transparent !important;
+  border: 1px solid #44445a !important;
+  border-radius: 6px !important;
+  color: #8888aa !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: background 0.15s, color 0.15s !important;
+  min-height: 44px !important;
+  min-width: 80px !important;
+}
+
+#idx-cancel-btn:hover:not(:disabled) {
+  background: #2a2a40 !important;
+  color: #ccccee !important;
+}
+
+#idx-upload-btn {
+  padding: 11px 24px !important;
+  background: #5a50aa !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+  min-height: 44px !important;
+  min-width: 88px !important;
+}
+
+#idx-upload-btn:hover:not(:disabled) {
+  background: #6a60bb !important;
+}
+
+#idx-upload-btn:disabled,
+#idx-cancel-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* -------------------------------------------------------------------------
+ * Status pills — slightly larger touch target on mobile.
+ * ------------------------------------------------------------------------- */
+
+#idx-pills {
+  position: fixed !important;
+  bottom: 12px !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 2147483646 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  align-items: stretch !important;
+}
+
+@media (min-width: 640px) {
+  #idx-pills {
+    left: auto !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  .idx-pill {
+    width: 320px !important;
+  }
+}
+
+.idx-pill {
+  pointer-events: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: #16192a !important;
+  border: 1px solid #2e2e50 !important;
+  border-radius: 8px !important;
+  color: #d8d8e8 !important;
+  padding: 11px 12px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5) !important;
+  box-sizing: border-box !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition: opacity 0.3s, transform 0.3s, border-color 0.2s !important;
+}
+
+.idx-pill.idx-pill-fade {
+  opacity: 0 !important;
+  transform: translateY(8px) !important;
+}
+
+.idx-pill-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 6px !important;
+}
+
+.idx-pill-icon {
+  font-size: 14px !important;
+  color: #9b8df0 !important;
+  display: inline-block !important;
+  width: 16px !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+}
+
+.idx-pill-phase {
+  flex: 1 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-pill-time {
+  color: #6c6c8a !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 11px !important;
+  flex-shrink: 0 !important;
+}
+
+.idx-pill-close {
+  margin-left: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  color: #6c6c8a !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  padding: 4px 8px !important;
+  line-height: 1 !important;
+  font-family: inherit !important;
+  flex-shrink: 0 !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+.idx-pill-close:hover {
+  color: #ccccee !important;
+}
+
+.idx-pill-name {
+  color: #b0b0cc !important;
+  font-size: 11px !important;
+  font-family: "SF Mono", "Fira Code", monospace !important;
+  margin-bottom: 6px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-pill-bar {
+  background: #0e1020 !important;
+  border-radius: 3px !important;
+  height: 4px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.idx-pill-fill {
+  background: #6a60bb !important;
+  height: 100% !important;
+  width: 0%;
+  transition: width 0.2s !important;
+}
+
+.idx-pill.idx-pill-indet .idx-pill-fill {
+  background: linear-gradient(90deg, transparent 0%, #6a60bb 50%, transparent 100%) !important;
+  background-size: 40% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  width: 100%;
+  animation: idx-pill-shimmer 1.2s linear infinite !important;
+}
+
+@keyframes idx-pill-shimmer {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}
+
+.idx-pill-meta {
+  margin-top: 5px !important;
+  color: #6c6c8a !important;
+  font-size: 11px !important;
+  font-variant-numeric: tabular-nums !important;
+  min-height: 13px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.idx-pill.idx-pill-success .idx-pill-icon { color: #4cca6e !important; }
+.idx-pill.idx-pill-success .idx-pill-fill { background: #4cca6e !important; }
+
+.idx-pill.idx-pill-duplicate .idx-pill-icon { color: #f0c050 !important; }
+.idx-pill.idx-pill-duplicate .idx-pill-fill { background: #f0c050 !important; }
+
+.idx-pill.idx-pill-error { border-color: #802040 !important; }
+.idx-pill.idx-pill-error .idx-pill-icon { color: #f06060 !important; }
+.idx-pill.idx-pill-error .idx-pill-meta { color: #f08080 !important; }
+
+.idx-pill.idx-pill-stuck {
+  border-color: #806020 !important;
+}
+.idx-pill.idx-pill-stuck::after {
+  content: "Still working — no progress for 30s" !important;
+  display: block !important;
+  margin-top: 5px !important;
+  color: #f0c050 !important;
+  font-size: 10px !important;
+}

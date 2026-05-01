@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "Download to Index (Android)",
+  "version": "1.1.0",
+  "description": "Tap the toolbar button to pick any image, video, or audio on a webpage and upload it to your self-hosted media index server.",
+  "author": "Houdini99",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "download-to-index-android@local",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "128.0"
+    }
+  },
+  "permissions": [
+    "notifications",
+    "cookies",
+    "webRequest",
+    "webRequestBlocking",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "optional_host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "icons": {
+    "48": "icons/icon48.png",
+    "96": "icons/icon96.png"
+  },
+  "action": {
+    "default_title": "Download to Index — pick media",
+    "default_icon": {
+      "48": "icons/icon48.png",
+      "96": "icons/icon96.png"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true,
+    "browser_style": false
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["page_helper.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

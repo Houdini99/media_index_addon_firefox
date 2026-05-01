@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download to Index — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Download to Index</h1>
+      <p class="sub">Configure the media index server this extension uploads to.</p>
+    </header>
+
+    <form id="settings-form" autocomplete="off">
+      <section class="field">
+        <label for="base-url">Server URL</label>
+        <input
+          id="base-url"
+          type="url"
+          inputmode="url"
+          placeholder="https://media.example.com"
+          spellcheck="false"
+          required
+        />
+        <p class="hint">
+          Root URL of your media index (no trailing slash). The login page is
+          expected at <code>/login</code> and uploads at <code>/upload</code>.
+        </p>
+      </section>
+
+      <section class="actions">
+        <button type="button" id="test-btn">Test connection</button>
+        <button type="submit" id="save-btn">Save</button>
+      </section>
+
+      <p id="status" aria-live="polite"></p>
+    </form>
+
+    <section class="usage">
+      <h2>How to use</h2>
+      <ol>
+        <li>Open a webpage with images, videos, or audio.</li>
+        <li>Tap the Firefox menu (⋮) and choose <strong>Download to Index</strong> from the extensions list.</li>
+        <li>Pick the media you want to upload from the list.</li>
+        <li>Add optional comma-separated tags and tap <strong>Upload</strong>.</li>
+      </ol>
+      <p class="hint">
+        Scroll the page first if items are still lazy-loading — the picker only
+        finds media that's already in the page.
+      </p>
+    </section>
+
+    <footer>
+      <h2>Privacy</h2>
+      <ul>
+        <li>Files and tags are sent only to the server URL you configure above.</li>
+        <li>The extension reads cookies for that server (to keep your session) and rewrites the <code>Referer</code> / <code>Origin</code> headers on requests it sends there (to satisfy CSRF checks).</li>
+        <li>No analytics, telemetry, or third-party requests.</li>
+        <li>Host access is requested per server when you save settings — the extension is not granted access to all sites at install.</li>
+      </ul>
+    </footer>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>
