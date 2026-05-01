@@ -31,6 +31,10 @@ The extension is host-agnostic: configure your server URL once in Settings, and 
 
 ## Install
 
+### From MOZILLA ADDON STORE
+
+1. [https://addons.mozilla.org/en-US/firefox/addon/download-to-index/](https://addons.mozilla.org/en-US/firefox/addon/download-to-index/) — DOWNLOAD HERE.
+
 ### From source (temporary, for development)
 
 1. Clone this repo:
@@ -64,24 +68,53 @@ The extension only requests host access for the server you configure. Switching 
 
 ## Native messaging helper (optional)
 
-The bundled `native-host/dl_helper.py` is a thin `yt-dlp` wrapper that resolves streaming page URLs into direct media URLs. Without it, only directly downloadable media works.
+The bundled [native-host/dl_helper.py](native-host/dl_helper.py) is a thin `yt-dlp` wrapper that resolves streaming page URLs into direct media URLs. Without it, only directly downloadable media works.
+
+All three platforms need **Python 3** and **yt-dlp** on `PATH`, plus the host manifest registered where Firefox looks for it. The host name is `download_to_index.dl_helper` — to use a different name, edit [native-host/download_to_index.dl_helper.json](native-host/download_to_index.dl_helper.json) and the matching field in the extension's Settings page.
+
+### Linux
 
 ```sh
-# Install yt-dlp first
-pip install --user yt-dlp     # or: pacman -S yt-dlp / brew install yt-dlp
+# 1. Install yt-dlp
+pip install --user yt-dlp     # or: pacman -S yt-dlp / apt install yt-dlp
 
-# Register the native messaging host with Firefox
+# 2. Register the host (writes manifest to ~/.mozilla/native-messaging-hosts/)
 cd native-host
 ./install.sh
 ```
 
-The script writes the host manifest to `~/.mozilla/native-messaging-hosts/`. macOS users should override `MANIFEST_DIR`:
+### macOS
 
 ```sh
+# 1. Install yt-dlp
+brew install yt-dlp
+
+# 2. Register the host (override the manifest path for Firefox on macOS)
+cd native-host
 MANIFEST_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts" ./install.sh
 ```
 
-The native host name is `download_to_index.dl_helper`. If you want to use a different name, edit `native-host/download_to_index.dl_helper.json` and the matching field in the extension's Settings page.
+### Windows
+
+Firefox on Windows reads the manifest path from the registry instead of a folder. Run in **PowerShell** from the repo root:
+
+```powershell
+# 1. Install yt-dlp (pick one)
+pip install --user yt-dlp
+winget install yt-dlp.yt-dlp
+
+# 2. Point the manifest at the absolute path of dl_helper.py
+$host_path = (Resolve-Path .\native-host\dl_helper.py).Path
+$manifest  = (Resolve-Path .\native-host\download_to_index.dl_helper.json).Path
+(Get-Content $manifest) -replace 'REPLACED_AT_INSTALL_TIME', ($host_path -replace '\\','\\') |
+    Set-Content $manifest
+
+# 3. Register the manifest with Firefox
+New-Item -Path 'HKCU:\Software\Mozilla\NativeMessagingHosts\download_to_index.dl_helper' -Force |
+    Set-ItemProperty -Name '(Default)' -Value $manifest
+```
+
+Because `dl_helper.py` is invoked directly, ensure `.py` files are associated with the Python launcher (the standard Python installer does this), or wrap the call in a `dl_helper.bat` that runs `python dl_helper.py %*` and point the manifest's `path` at the `.bat` instead.
 
 ## Project layout
 
